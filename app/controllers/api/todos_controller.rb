@@ -1,18 +1,9 @@
+
 module Api
   class TodosController < Api::BaseController
     before_action :doorkeeper_authorize!
 
     def create
-      if params[:file_path] && params[:file_name]
-        attach_file_to_todo
-      else
-        create_todo
-      end
-    end
-
-    private
-
-    def create_todo
       begin
         todo_service = TodoService::Create.new(todo_params)
         result = todo_service.execute
@@ -26,30 +17,27 @@ module Api
       end
     end
 
-    def attach_file_to_todo
-      todo_id = params[:todo_id]
-      file_path = params[:file_path]
-      file_name = params[:file_name]
+    def conflicts
+      title = params[:title]
+      due_date = params[:due_date]
 
+      return render json: { error: "The title is required." }, status: :bad_request if title.blank?
       begin
-        raise "File path is required." if file_path.blank?
-        raise "File name is required." if file_name.blank?
+        due_date = DateTime.parse(due_date)
+      rescue ArgumentError
+        return render json: { error: "Invalid due date format." }, status: :unprocessable_entity
+      end
 
-        result = TodoService::AttachFile.new(
-          todo_id: todo_id,
-          file_path: file_path,
-          file_name: file_name
-        ).call
+      result = TodoService.check_for_conflicting_todos(current_resource_owner.id, title, due_date)
 
-        if result[:id]
-          render json: { status: 201, attachment: result }, status: :created
-        else
-          render json: { error: result[:error] }, status: :unprocessable_entity
-        end
-      rescue => e
-        render json: { error: e.message }, status: :bad_request
+      if result[:success]
+        render json: { status: 200, conflicts: [] }, status: :ok
+      else
+        render json: { status: 409, conflicts: Todo.where(user_id: current_resource_owner.id, title: title, due_date: due_date) }, status: :conflict
       end
     end
+
+    private
 
     def todo_params
       params.require(:todo).permit(

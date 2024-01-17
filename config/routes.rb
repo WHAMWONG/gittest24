@@ -8,6 +8,11 @@ Rails.application.routes.draw do
 
   # API namespace
   namespace :api do
+    resources :todos, only: [] do
+      collection do
+        get 'conflicts', to: 'todos#conflicts'
+      end
+    end
     post '/todos', to: 'todos#create'
   end
 
