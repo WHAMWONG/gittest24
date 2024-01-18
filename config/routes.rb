@@ -8,25 +8,22 @@ Rails.application.routes.draw do
 
   # API namespace
   namespace :api do
-    # Merged the new route from the new code with the existing routes
-    post '/folders/error', to: 'folders#handle_folder_creation_error'
-    post '/folders/validate', to: 'folders#validate' # Existing route from the old code
-
     resources :todos, only: [] do
       collection do
+        post '/folders/validate', to: 'folders#validate' # Existing code
         get 'conflicts', to: 'todos#conflicts'
+        resources :folders, only: [:create] # New code
       end
       member do
         get 'deletion-error', to: 'todos#handle_deletion_error'
         post 'cancel-deletion', to: 'todos#cancel_deletion'
       end
     end
-    # These routes are the same in both the new and existing code, so they are included once
-    delete '/todos/:id', to: 'todos#destroy'
+    delete '/todos/:id', to: 'todos#destroy' # New code
     post '/todos', to: 'todos#create'
+    post '/folders/cancel', to: 'folders#cancel_creation' # New code
   end
 
-  # This section is the same in both the new and existing code, so it remains unchanged
   resources :todos, only: [] do
     member do
       post 'attachments', to: 'attachments#create'

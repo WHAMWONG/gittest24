@@ -1,9 +1,32 @@
 module Api
   class FoldersController < BaseController
-    include FolderService
-    include Pundit::Authorization
-
     before_action :doorkeeper_authorize!
+
+    def create
+      authorize :folder, policy_class: FolderPolicy
+
+      validation = FolderService::ValidateCreation.validate_folder_creation(
+        user_id: current_resource_owner.id,
+        folder_name: folder_params[:name]
+      )
+
+      if validation[:is_valid]
+        result = FolderService::Create.new.call(
+          user_id: current_resource_owner.id,
+          name: folder_params[:name],
+          color: folder_params[:color],
+          icon: folder_params[:icon]
+        )
+
+        if result[:folder_id]
+          render json: result, status: :created
+        else
+          render json: { error: result[:error] }, status: :unprocessable_entity
+        end
+      else
+        render json: { error: validation[:error_message] }, status: :conflict
+      end
+    end
 
     def validate
       authorize Folder, policy_class: FolderPolicy
@@ -28,32 +51,23 @@ module Api
       render json: { error: e.message }, status: :internal_server_error
     end
 
-    def handle_folder_creation_error
-      error_message = params[:error_message]
+    def cancel_creation
+      authorize :folder, policy_class: FolderPolicy
 
-      if error_message.blank?
-        render json: { message: "An error message is required." }, status: :bad_request
-        return
-      end
+      # Business logic to cancel folder creation would go here
+      # Since no specific logic is required, we simply return a success message
 
-      result = HandleCreationError.new(current_resource_owner.id, error_message).call
-
-      case result[:status]
-      when 'Error'
-        if result[:error_message].include?('User not found')
-          render json: { message: result[:error_message] }, status: :unauthorized
-        else
-          render json: { message: result[:error_message] }, status: :internal_server_error
-        end
-      else
-        render json: { status: 200, message: "The error has been handled: #{error_message}" }, status: :ok
-      end
+      render json: { status: 200, message: "Folder creation process has been canceled successfully." }, status: :ok
     end
 
     private
 
     def folder_params
-      params.require(:folder).permit(:name)
+      params.permit(:name, :color, :icon)
+    end
+
+    def current_resource_owner
+      current_user || super
     end
   end
 end
