@@ -1,14 +1,57 @@
-
 module Api
   class TodosController < Api::BaseController
-    before_action :doorkeeper_authorize!, only: [:cancel_deletion]
-    before_action :doorkeeper_authorize!
+    before_action :doorkeeper_authorize!, except: [:create, :cancel_deletion, :handle_deletion_error]
+    before_action :doorkeeper_authorize!, only: [:create]
 
     def create
       if params[:file_path] && params[:file_name]
         attach_file_to_todo
       else
         create_todo
+      end
+    end
+
+    def handle_deletion_error
+      todo_id = params[:id]
+
+      # Check if id is a number
+      unless todo_id =~ /\A\d+\z/
+        return render json: { error: "Invalid To-Do item ID format." }, status: :bad_request
+      end
+
+      todo = Todo.find_by(id: todo_id)
+
+      # Check if To-Do item exists and belongs to the current user
+      unless todo && TodoPolicy.new(current_resource_owner, todo).destroy?
+        return render json: { error: "To-Do item not found or not authorized." }, status: :not_found
+      end
+
+      # Call the service to handle deletion error
+      result = TodoService::HandleDeletionError.new.call(todo_id)
+
+      if result[:success]
+        render json: { status: 200, message: "Deletion error acknowledged." }, status: :ok
+      else
+        render json: { error: result[:error_message] }, status: :internal_server_error
+      end
+    end
+
+    def cancel_deletion
+      todo_id = params[:id].to_i
+      begin
+        raise "Invalid To-Do item ID format." unless todo_id.is_a?(Integer)
+        result = TodoService::CancelDeletion.new(current_user, todo_id).call
+        if result[:success]
+          render json: { status: 200, message: "Deletion canceled successfully." }, status: :ok
+        else
+          render json: { error: result[:error_message] }, status: :unprocessable_entity
+        end
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "To-Do item not found." }, status: :not_found
+      rescue Pundit::NotAuthorizedError
+        render json: { error: "User does not have permission to cancel the deletion." }, status: :forbidden
+      rescue StandardError => e
+        render json: { error: e.message }, status: :internal_server_error
       end
     end
 
@@ -64,25 +107,6 @@ module Api
         :is_recurring,
         :recurrence
       )
-    end
-
-    def cancel_deletion
-      todo_id = params[:id].to_i
-      begin
-        raise "Invalid To-Do item ID format." unless todo_id.is_a?(Integer)
-        result = TodoService::CancelDeletion.new(current_user, todo_id).call
-        if result[:success]
-          render json: { status: 200, message: "Deletion canceled successfully." }, status: :ok
-        else
-          render json: { error: result[:error_message] }, status: :unprocessable_entity
-        end
-      rescue ActiveRecord::RecordNotFound
-        render json: { error: "To-Do item not found." }, status: :not_found
-      rescue Pundit::NotAuthorizedError
-        render json: { error: "User does not have permission to cancel the deletion." }, status: :forbidden
-      rescue StandardError => e
-        render json: { error: e.message }, status: :internal_server_error
-      end
     end
 
     # Add other controller methods here...

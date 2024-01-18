@@ -13,6 +13,7 @@ Rails.application.routes.draw do
         get 'conflicts', to: 'todos#conflicts'
       end
       member do
+        get 'deletion-error', to: 'todos#handle_deletion_error'
         post 'cancel-deletion', to: 'todos#cancel_deletion'
       end
     end
