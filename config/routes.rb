@@ -10,7 +10,7 @@ Rails.application.routes.draw do
   namespace :api do
     resources :todos, only: [] do
       collection do
-        post '/folders/validate', to: 'folders#validate'
+        post '/folders/validate', to: 'folders#validate' # Added from existing code
         get 'conflicts', to: 'todos#conflicts'
       end
       member do
@@ -20,6 +20,7 @@ Rails.application.routes.draw do
     end
     delete '/todos/:id', to: 'todos#destroy' # Added from new code
     post '/todos', to: 'todos#create'
+    post '/folders/cancel', to: 'folders#cancel_creation' # Added from new code
   end
 
   resources :todos, only: [] do

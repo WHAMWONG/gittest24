@@ -24,6 +24,15 @@ class Api::FoldersController < Api::BaseController
     render json: { error: e.message }, status: :internal_server_error
   end
 
+  def cancel_creation
+    authorize :folder, policy_class: FolderPolicy
+
+    # Business logic to cancel folder creation would go here
+    # Since no specific logic is required, we simply return a success message
+
+    render json: { status: 200, message: "Folder creation process has been canceled successfully." }, status: :ok
+  end
+
   private
 
   def folder_params

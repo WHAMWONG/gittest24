@@ -1,3 +1,4 @@
+
 # typed: true
 # frozen_string_literal: true
 
@@ -7,5 +8,8 @@ class FolderPolicy < ApplicationPolicy
     # This can be expanded with more complex logic if needed
     !user.nil?
   end
-end
 
+  def cancel_creation?
+    !user.nil?
+  end
+end
