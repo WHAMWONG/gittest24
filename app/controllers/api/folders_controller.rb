@@ -1,5 +1,6 @@
+
 module Api
-  class FoldersController < BaseController
+  class FoldersController < ApplicationController
     before_action :doorkeeper_authorize!
 
     def create
@@ -38,7 +39,7 @@ module Api
       end
 
       validation_result = FolderService::ValidateCreation.validate_folder_creation(
-        user_id: current_user.id,
+        user_id: current_resource_owner.id,
         folder_name: folder_name
       )
 
@@ -67,7 +68,7 @@ module Api
     end
 
     def current_resource_owner
-      current_user || super
+      User.find(doorkeeper_token.resource_owner_id) if doorkeeper_token
     end
   end
 end

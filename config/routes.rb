@@ -10,19 +10,21 @@ Rails.application.routes.draw do
   namespace :api do
     resources :todos, only: [] do
       collection do
-        post '/folders/validate', to: 'folders#validate' # Existing code
+        post '/folders/validate', to: 'folders#validate'
         get 'conflicts', to: 'todos#conflicts'
-        resources :folders, only: [:create] # New code
+        resources :folders, only: [:create]
       end
       member do
         get 'deletion-error', to: 'todos#handle_deletion_error'
         post 'cancel-deletion', to: 'todos#cancel_deletion'
       end
     end
-    delete '/todos/:id', to: 'todos#destroy' # New code
+    delete '/todos/:id', to: 'todos#destroy'
     post '/todos', to: 'todos#create'
-    post '/folders/cancel', to: 'folders#cancel_creation' # New code
+    post '/folders/cancel', to: 'folders#cancel_creation'
   end
+
+  resources :attachments, only: [:create]
 
   resources :todos, only: [] do
     member do
