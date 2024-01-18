@@ -18,10 +18,8 @@ class Api::AttachmentsController < ApplicationController
   end
 
   private
-
   def authorize_attachment
     # Implement authorization logic here, possibly using AttachmentPolicy
   end
-end
 
 end
