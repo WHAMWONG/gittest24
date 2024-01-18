@@ -21,24 +21,6 @@ module Api
       # Implement conflict checking logic here
     end
 
-    # Other missing actions can be implemented here following the same pattern
-
-    # ...
-
-    def destroy
-      begin
-        todo_service = TodoService::Delete.new(current_resource_owner.id, @todo.id)
-        todo_service.execute
-        render json: { status: 200, message: 'To-Do item successfully deleted.' }, status: :ok
-      rescue ActiveRecord::RecordNotFound => e
-        render json: { error: e.message }, status: :not_found
-      rescue Pundit::NotAuthorizedError => e
-        render json: { error: e.message }, status: :forbidden
-      rescue StandardError => e
-        render json: { error: e.message }, status: :internal_server_error
-      end
-    end
-
     def handle_deletion_error
       # Check if To-Do item exists and belongs to the current user
       unless @todo && TodoPolicy.new(current_resource_owner, @todo).destroy?
@@ -68,6 +50,20 @@ module Api
         render json: { error: "To-Do item not found." }, status: :not_found
       rescue Pundit::NotAuthorizedError
         render json: { error: "User does not have permission to cancel the deletion." }, status: :forbidden
+      rescue StandardError => e
+        render json: { error: e.message }, status: :internal_server_error
+      end
+    end
+
+    def destroy
+      begin
+        todo_service = TodoService::Delete.new(current_resource_owner.id, @todo.id)
+        todo_service.execute
+        render json: { status: 200, message: 'To-Do item successfully deleted.' }, status: :ok
+      rescue ActiveRecord::RecordNotFound => e
+        render json: { error: e.message }, status: :not_found
+      rescue Pundit::NotAuthorizedError => e
+        render json: { error: e.message }, status: :forbidden
       rescue StandardError => e
         render json: { error: e.message }, status: :internal_server_error
       end

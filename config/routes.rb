@@ -1,3 +1,4 @@
+
 require 'sidekiq/web'
 
 Rails.application.routes.draw do
@@ -23,8 +24,6 @@ Rails.application.routes.draw do
     post '/todos', to: 'todos#create'
     post '/folders/cancel', to: 'folders#cancel_creation'
   end
-
-  resources :attachments, only: [:create]
 
   resources :todos, only: [] do
     member do
