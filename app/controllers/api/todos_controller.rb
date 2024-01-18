@@ -1,13 +1,27 @@
 module Api
   class TodosController < Api::BaseController
-    before_action :doorkeeper_authorize!, except: [:create, :cancel_deletion, :handle_deletion_error]
-    before_action :doorkeeper_authorize!, only: [:create]
+    before_action :doorkeeper_authorize!, except: [:cancel_deletion, :handle_deletion_error]
+    before_action :doorkeeper_authorize!, only: [:create, :destroy]
 
     def create
       if params[:file_path] && params[:file_name]
         attach_file_to_todo
       else
         create_todo
+      end
+    end
+
+    def destroy
+      begin
+        todo_service = TodoService::Delete.new(current_resource_owner.id, params[:id])
+        todo_service.execute
+        render json: { status: 200, message: 'To-Do item successfully deleted.' }, status: :ok
+      rescue ActiveRecord::RecordNotFound => e
+        render json: { error: e.message }, status: :not_found
+      rescue Pundit::NotAuthorizedError => e
+        render json: { error: e.message }, status: :forbidden
+      rescue StandardError => e
+        render json: { error: e.message }, status: :internal_server_error
       end
     end
 
@@ -108,8 +122,5 @@ module Api
         :recurrence
       )
     end
-
-    # Add other controller methods here...
-
   end
 end

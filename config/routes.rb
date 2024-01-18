@@ -17,6 +17,7 @@ Rails.application.routes.draw do
         post 'cancel-deletion', to: 'todos#cancel_deletion'
       end
     end
+    delete '/todos/:id', to: 'todos#destroy' # Added from new code
     post '/todos', to: 'todos#create'
   end
 
