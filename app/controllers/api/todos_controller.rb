@@ -1,5 +1,10 @@
 module Api
   class TodosController < Api::BaseController
+    def conflicts
+      result = TodoService.check_for_conflicting_todos(current_resource_owner.id, params[:title], params[:due_date])
+      render json: result, status: result[:success] ? :ok : :unprocessable_entity
+    end
+
     before_action :doorkeeper_authorize!, except: [:cancel_deletion, :handle_deletion_error]
     before_action :doorkeeper_authorize!, only: [:create, :destroy]
 
@@ -67,6 +72,14 @@ module Api
       rescue StandardError => e
         render json: { error: e.message }, status: :internal_server_error
       end
+    end
+
+    def handle_deletion_error
+      # Implementation for handle_deletion_error action
+    end
+
+    def cancel_deletion
+      # Implementation for cancel_deletion action
     end
 
     private
