@@ -18,7 +18,12 @@ module Api
     end
 
     def conflicts
-      # Implement conflict checking logic here
+      result = TodoService.check_for_conflicting_todos(current_resource_owner.id, params[:title], params[:due_date])
+      if result[:success]
+        render json: { status: 200, message: "No conflicts found." }, status: :ok
+      else
+        render json: { error: result[:error_message] }, status: :unprocessable_entity
+      end
     end
 
     def handle_deletion_error
